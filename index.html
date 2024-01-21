@@ -1,0 +1,178 @@
+
+
+
+
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Repositories</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            margin: 20px;
+            align-items: center;
+            text-align: center;
+            background-color: dimgrey;
+            color: white;
+        }
+        .repository-card {
+            margin-bottom: 10px;
+        }
+
+        #repositories-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .card {
+            width: 40%; 
+            margin: 8px;
+            background-color: darkslategray;
+            color: white;
+        }
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .page-link {
+            color: white;
+            background-color: darkslategray;
+            border: 1px solid white;
+        }
+        .page-item.active .page-link {
+            background-color: #343a40; 
+            border: 1px solid white;
+        }
+
+        .container {
+            width: 80%;
+            height: 170%;
+            border: 2px solid burlywood;
+        }
+    </style>
+</head>
+<body>
+
+<div>
+    <label for="username">GitHub Username:</label>
+    <input type="text" id="username" placeholder="Enter GitHub username">
+    <button class="btn btn-light" onclick="fetchAndDisplayRepositories()">Fetch Repositories</button>
+</div>
+
+<div class="container">
+    <div id="repositories-container" class="d-flex flex-wrap justify-content-center"></div>
+    <div id="pagination-container" class="pagination"></div>
+</div>
+
+<script>
+    let currentPage = 1;
+    let repositoriesPerPage = 10;
+
+    const fetchAndDisplayRepositories = async () => {
+        const username = document.getElementById('username').value;
+        const repositoriesContainer = document.getElementById('repositories-container');
+        const paginationContainer = document.getElementById('pagination-container');
+
+        try {
+            const repositories = await fetchRepositories(username, currentPage, repositoriesPerPage);
+
+            
+            repositoriesContainer.innerHTML = '';
+
+            
+            repositories.forEach(repo => {
+                const repositoryCard = document.createElement('div');
+                repositoryCard.className = 'card repository-card';
+                repositoryCard.innerHTML = `
+                    <div class="card-body">
+                        <h5 class="card-title">${repo.name}</h5>
+                        <p class="card-text">${repo.description || 'No description available'}</p>
+                        <p class="card-text"><strong>Technologies:</strong> ${repo.topics.join(', ') || 'No topics available'}</p>
+                    </div>`;
+                repositoriesContainer.appendChild(repositoryCard);
+            });
+
+           
+            renderPagination(paginationContainer);
+        } catch (error) {
+            console.error(error);
+            repositoriesContainer.innerHTML = 'Error fetching repositories';
+        }
+    };
+
+    const fetchRepositories = async (username, page, perPage) => {
+        const apiUrl = `https://api.github.com/users/${username}/repos?page=${page}&per_page=${perPage}`;
+
+        try {
+            const response = await fetch(apiUrl);
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            console.error('Error fetching repositories:', error);
+            throw error;
+        }
+    };
+
+    const renderPagination = (paginationContainer) => {
+        const totalPages = 10; 
+        paginationContainer.innerHTML = '';
+
+        
+        const previousButton = createPaginationButton('Previous', () => previousPage());
+        paginationContainer.appendChild(previousButton);
+
+        
+        for (let i = 1; i <= totalPages; i++) {
+            const pageButton = createPaginationButton(i, () => gotoPage(i));
+            if (i === currentPage) {
+                pageButton.classList.add('active');
+            }
+            paginationContainer.appendChild(pageButton);
+        }
+
+      
+        const nextButton = createPaginationButton('Next', () => nextPage());
+        paginationContainer.appendChild(nextButton);
+    };
+
+    const createPaginationButton = (label, onClickHandler) => {
+        const pageButton = document.createElement('li');
+        pageButton.className = 'page-item';
+        const buttonLink = document.createElement('a');
+        buttonLink.className = 'page-link';
+        buttonLink.href = '#';
+        buttonLink.textContent = label;
+        buttonLink.addEventListener('click', (event) => {
+            event.preventDefault();
+            onClickHandler();
+        });
+        pageButton.appendChild(buttonLink);
+        return pageButton;
+    };
+
+    const previousPage = () => {
+        if (currentPage > 1) {
+            currentPage--;
+            fetchAndDisplayRepositories();
+        }
+    };
+
+    const nextPage = () => {
+        currentPage++;
+        fetchAndDisplayRepositories();
+    };
+
+    const gotoPage = (page) => {
+        if (page !== currentPage) {
+            currentPage = page;
+            fetchAndDisplayRepositories();
+        }
+    };
+</script>
+
+</body>
+</html>
+
